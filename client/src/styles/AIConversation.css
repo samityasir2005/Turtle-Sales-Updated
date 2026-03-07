@@ -473,6 +473,9 @@
   align-items: center;
   gap: 0.75rem;
   flex-shrink: 0;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .mic-button-large {
@@ -488,6 +491,10 @@
   align-items: center;
   justify-content: center;
   user-select: none;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mic-button-large:hover:not(:disabled) {

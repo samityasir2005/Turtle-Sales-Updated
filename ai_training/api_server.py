@@ -93,6 +93,9 @@ def start_session():
             'voice': sessions[session_id]['voice']
         })
     except Exception as e:
+        import traceback
+        print(f"ERROR in start_session: {str(e)}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
