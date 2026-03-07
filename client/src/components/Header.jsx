@@ -3,10 +3,11 @@ import Container from "react-bootstrap/Container";
 import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
 import NavDropdown from "react-bootstrap/NavDropdown";
+import logo from "../assets/logo.png";
 
 export default function Header() {
   const [token, setToken] = useState(
-    JSON.parse(localStorage.getItem("auth")) || ""
+    JSON.parse(localStorage.getItem("auth")) || "",
   );
 
   const updateToken = () => {
@@ -36,9 +37,21 @@ export default function Header() {
               fontWeight: "bold",
               color: "var(--primary-green)",
               textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
             }}
           >
-            🐢 Turtle Sales
+            <img
+              src={logo}
+              alt="Turtle Sales Logo"
+              style={{
+                height: "40px",
+                width: "auto",
+                objectFit: "contain",
+              }}
+            />
+            Turtle Sales
           </Navbar.Brand>
           <Navbar.Toggle
             aria-controls="basic-navbar-nav"
