@@ -15,7 +15,7 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
   const [token, setToken] = useState(
-    JSON.parse(localStorage.getItem("auth")) || ""
+    JSON.parse(localStorage.getItem("auth")) || "",
   );
 
   // Password strength calculation
@@ -71,21 +71,25 @@ const Register = () => {
     // Validate username
     const usernameChecks = validateUsername(username);
     if (!Object.values(usernameChecks).every(Boolean)) {
+      toast.error("Please fix the username requirements");
       return;
     }
 
     // Validate email
     if (!validateEmail(email)) {
+      toast.error("Please enter a valid email address");
       return;
     }
 
     // Validate password strength
     if (passwordStrength.score < 3) {
+      toast.error("Password must be at least Medium strength");
       return;
     }
 
     // Check if passwords match
     if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
 
@@ -104,7 +108,7 @@ const Register = () => {
       try {
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/auth/register`,
-          formData
+          formData,
         );
         toast.success("Registration successful");
         navigate("/login");
@@ -348,12 +352,6 @@ const Register = () => {
             className="submit-btn"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            disabled={
-              !Object.values(usernameValidation).every(Boolean) ||
-              !validateEmail(email) ||
-              passwordStrength.score < 3 ||
-              !passwordsMatch
-            }
           >
             Create Account
           </motion.button>

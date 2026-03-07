@@ -28,6 +28,7 @@ import {
   Login,
   Logout,
   Register,
+  AIConversation,
 } from "./pages";
 import TurtlePortal from "./pages/TurtlePortal";
 import { UserProvider } from "./usercontext/UserContext";
@@ -104,6 +105,10 @@ const router = createBrowserRouter([
       {
         path: "ai-sales-training",
         element: <AISalesTraining />,
+      },
+      {
+        path: "ai-conversation",
+        element: <AIConversation />,
       },
     ],
   },

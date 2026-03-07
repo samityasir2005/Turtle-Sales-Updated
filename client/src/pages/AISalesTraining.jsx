@@ -3,22 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { UserContext } from "../usercontext/UserContext";
 import { motion } from "framer-motion";
 import {
-  FiCpu,
   FiMessageSquare,
   FiTrendingUp,
   FiBook,
   FiZap,
-  FiArrowLeft,
   FiArrowRight,
 } from "react-icons/fi";
 import "../styles/AISalesTraining.css";
-import tobiIcon from "../assets/tobi.png";
 
 const AISalesTraining = () => {
   const { token } = useContext(UserContext);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
+
     // Redirect to login if not authenticated
     if (!token) {
       navigate("/login");
@@ -83,66 +83,27 @@ const AISalesTraining = () => {
       initial="hidden"
       animate="visible"
     >
-      <motion.div className="training-header" variants={itemVariants}>
-        <button className="back-btn" onClick={() => navigate("/turtle-portal")}>
-          <FiArrowLeft />
-          <span>Back to Portal</span>
-        </button>
-      </motion.div>
-
       <motion.div className="main-cta-section" variants={itemVariants}>
-        <div className="tobi-intro">
-          <div className="tobi-avatar">
-            <img src={tobiIcon} alt="Tobi AI" />
-          </div>
-          <h2>Meet Tobi</h2>
-          <p className="tobi-tagline">Your Personal AI Sales Coach</p>
+        <div className="training-intro">
+          <h1>AI Sales Training</h1>
+          <p className="training-tagline">
+            Practice real door-to-door sales scenarios with AI-powered customers
+          </p>
+          <p className="training-description">
+            Each session simulates a realistic homeowner interaction. Use voice
+            or text to practice your pitch, handle objections, and close the
+            sale. Get instant feedback and improve your skills in a risk-free
+            environment.
+          </p>
         </div>
 
-        <button className="practice-btn">
-          <span>Practice with Tobi Right Now!</span>
+        <button
+          className="practice-btn"
+          onClick={() => navigate("/ai-conversation")}
+        >
+          <span>Start AI Sales Training</span>
           <FiArrowRight />
         </button>
-
-        <div className="about-tobi">
-          <h3>About Tobi</h3>
-          <p>
-            Tobi is an advanced AI-powered sales coach designed specifically for
-            door-to-door sales professionals. With years of sales knowledge and
-            proven strategies built into its training, Tobi helps you practice
-            real-world sales scenarios, refine your pitch, and overcome
-            objections with confidence.
-          </p>
-          <div className="tobi-stats">
-            <div className="stat-box">
-              <div className="stat-icon">
-                <FiMessageSquare />
-              </div>
-              <div className="stat-text">
-                <span className="stat-number">24/7</span>
-                <span className="stat-label">Available</span>
-              </div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-icon">
-                <FiTrendingUp />
-              </div>
-              <div className="stat-text">
-                <span className="stat-number">Instant</span>
-                <span className="stat-label">Feedback</span>
-              </div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-icon">
-                <FiBook />
-              </div>
-              <div className="stat-text">
-                <span className="stat-number">100+</span>
-                <span className="stat-label">Scenarios</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </motion.div>
 
       <motion.div className="features-section" variants={containerVariants}>
