@@ -52,8 +52,6 @@ const AIConversation = () => {
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
   const greetingAudioRef = useRef(null);
-  const activeTouchRef = useRef(null); // Track active touch for more reliable detection
-  const recordingTimeoutRef = useRef(null); // Failsafe timeout
 
   useEffect(() => {
     // Force scroll to top immediately
@@ -85,15 +83,6 @@ const AIConversation = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (recordingTimeoutRef.current) {
-        clearTimeout(recordingTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
@@ -407,106 +396,47 @@ const AIConversation = () => {
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
+      console.log("✋ Stopping recording...");
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      activeTouchRef.current = null; // Clear active touch
-      if (recordingTimeoutRef.current) {
-        clearTimeout(recordingTimeoutRef.current);
-        recordingTimeoutRef.current = null;
-      }
     }
   };
 
-  // Touch-friendly event handlers
-  const handleRecordStart = (e) => {
-    e.preventDefault(); // Prevent default touch behavior
-    e.stopPropagation(); // Stop event bubbling
-
-    if (!isProcessing && !isLoading && sessionId) {
-      // Track touch identifier for more reliable detection
-      if (e.type === "touchstart" && e.touches && e.touches[0]) {
-        activeTouchRef.current = e.touches[0].identifier;
-      }
-
-      startRecording();
-
-      // Failsafe: auto-stop after 60 seconds max
-      recordingTimeoutRef.current = setTimeout(() => {
-        console.log("Recording timeout - auto-stopping");
-        stopRecording();
-      }, 60000);
+  // Push-to-talk event handlers - using pointer events for reliable cross-device support
+  const handlePressStart = (e) => {
+    console.log("🔴 Press START event:", e.type, "pointerType:", e.pointerType);
+    
+    e.preventDefault(); // Prevent default to avoid scrolling/right-click
+    
+    if (isProcessing || isLoading || !sessionId) {
+      console.log("❌ Cannot start - isProcessing:", isProcessing, "isLoading:", isLoading, "sessionId:", sessionId);
+      return;
     }
+    
+    console.log("🎤 Starting recording...");
+    startRecording();
   };
 
-  const handleRecordStop = (e) => {
-    e.preventDefault(); // Prevent default touch behavior
-    e.stopPropagation(); // Stop event bubbling
-
-    // For touch events, verify it's the same touch that started
-    if (e.type === "touchend" && e.changedTouches && e.changedTouches[0]) {
-      const touchId = e.changedTouches[0].identifier;
-      // Only stop if this is the touch that started recording, or if we're not tracking
-      if (
-        activeTouchRef.current === null ||
-        activeTouchRef.current === touchId
-      ) {
-        stopRecording();
-      }
-    } else {
-      // Mouse events or other - just stop
-      stopRecording();
-    }
-  };
-
-  const handleTouchCancel = (e) => {
-    // If touch is canceled (e.g., user drags finger off button), stop recording
+  const handlePressEnd = (e) => {
+    console.log("🟢 Press END event:", e.type, "pointerType:", e.pointerType, "isRecording:", isRecording);
+    
     e.preventDefault();
-    e.stopPropagation();
-    stopRecording();
+    
+    if (isRecording) {
+      console.log("✅ Stopping recording via", e.type);
+      stopRecording();
+    } else {
+      console.log("⚠️ Not recording, ignoring", e.type);
+    }
   };
 
   const handleContextMenu = (e) => {
     // Prevent right-click menu on Windows 11 touchscreens
+    console.log("🚫 Context menu prevented");
     e.preventDefault();
     e.stopPropagation();
     return false;
   };
-
-  // Add window-level touch end listener as a failsafe
-  useEffect(() => {
-    const handleWindowTouchEnd = (e) => {
-      // If we're recording and any touch ends, check if it's our touch
-      if (isRecording && activeTouchRef.current !== null) {
-        for (let i = 0; i < e.changedTouches.length; i++) {
-          if (e.changedTouches[i].identifier === activeTouchRef.current) {
-            console.log("Window-level touch end detected - stopping recording");
-            stopRecording();
-            break;
-          }
-        }
-      }
-    };
-
-    const handleWindowTouchCancel = () => {
-      // If touch is canceled at window level while recording, stop
-      if (isRecording) {
-        console.log("Window-level touch cancel detected - stopping recording");
-        stopRecording();
-      }
-    };
-
-    window.addEventListener("touchend", handleWindowTouchEnd, {
-      passive: false,
-    });
-    window.addEventListener("touchcancel", handleWindowTouchCancel, {
-      passive: false,
-    });
-
-    return () => {
-      window.removeEventListener("touchend", handleWindowTouchEnd);
-      window.removeEventListener("touchcancel", handleWindowTouchCancel);
-    };
-  }, [isRecording]); // Re-attach when recording state changes
 
   const transcribeAndSend = async (audioBlob, mimeType) => {
     try {
@@ -1119,12 +1049,10 @@ const AIConversation = () => {
             <div className="mic-button-section">
               <button
                 className={`mic-button-large ${isRecording ? "recording" : ""}`}
-                onMouseDown={handleRecordStart}
-                onMouseUp={handleRecordStop}
-                onMouseLeave={stopRecording}
-                onTouchStart={handleRecordStart}
-                onTouchEnd={handleRecordStop}
-                onTouchCancel={handleTouchCancel}
+                onPointerDown={handlePressStart}
+                onPointerUp={handlePressEnd}
+                onPointerLeave={handlePressEnd}
+                onPointerCancel={handlePressEnd}
                 onContextMenu={handleContextMenu}
                 disabled={isProcessing || isLoading || !sessionId}
                 title="Hold to record your voice"
