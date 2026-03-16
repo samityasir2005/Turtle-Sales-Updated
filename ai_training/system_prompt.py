@@ -14,21 +14,6 @@ def _fmt_list(items: list[str], bullet: str = "-") -> str:
     return "\n".join(f"  {bullet} {item}" for item in items)
 
 
-def _get_random_name_variation(base_name: str) -> str:
-    """Add variety to persona names - same archetype, different actual names."""
-    # Map of persona base names to random alternatives
-    name_pools = {
-        "Dave": ["Dave", "Mike", "Chris", "Brian", "Steve", "Jeff", "Tom", "Dan"],
-        "Priya": ["Priya", "Maya", "Anjali", "Sarah", "Jessica", "Emily", "Rachel", "Lauren"],
-        "Linda": ["Linda", "Carol", "Barbara", "Susan", "Nancy", "Diane", "Kathy", "Sharon"],
-        "Marcus": ["Marcus", "James", "Andre", "Carlos", "Kevin", "Tony", "Jason", "Eric"],
-        "Rick": ["Rick", "Dan", "Gary", "Bob", "Frank", "Joe", "Wayne", "Larry"],
-        "Amy": ["Amy", "Rachel", "Jennifer", "Julie", "Lisa", "Michelle", "Kelly", "Stephanie"],
-        "James": ["James", "David", "Alex", "Ryan", "Jordan", "Ben", "Sam", "Matt"],
-    }
-    return random.choice(name_pools.get(base_name, [base_name]))
-
-
 def _get_random_time_context() -> str:
     """Return a random time-of-day context for more varied scenarios."""
     times = [
@@ -154,28 +139,11 @@ def build_system_prompt(
     """Return the full system prompt for the customer agent."""
 
     style = persona.get("conversation_style", {})
-    life_details = persona.get("life_details", {})
     speech = persona.get("speech_patterns", {})
 
-    # Add randomness to the name each time
-    base_name = life_details.get('name', 'pick a name')
-    random_name = _get_random_name_variation(base_name)
     random_distraction = _get_random_distraction()
     random_weather = _get_random_weather()
     random_time = _get_random_time_context()
-
-    # Build life details section with randomized elements
-    life_section = ""
-    if life_details:
-        life_section = f"""
-YOUR PERSONAL LIFE (weave these in naturally, don't dump them):
-  - Name: {random_name} (but you won't say your name unless they ask)
-  - Family: {life_details.get('family', 'varies')}
-  - Currently doing: {life_details.get('activity_when_interrupted', 'relaxing at home')}
-  - Recent experiences: {life_details.get('recent_context', 'nothing notable')}
-  - Home details: {life_details.get('home_details', 'typical suburban home')}
-  - Current context: {random_time}, {random_weather}, and there might be {random_distraction} during the conversation
-"""
 
     # Build speech patterns section
     speech_section = ""
@@ -188,6 +156,15 @@ HOW YOU TALK (this is critical for realism):
   - Grammar: {speech.get('grammar', 'casual, sometimes incorrect')}
   - Example lines: 
 {_fmt_list(speech.get('example_lines', []), '>')}
+"""
+
+    # Build price objections section if persona has them
+    price_section = ""
+    price_objections = persona.get("price_objections", [])
+    if price_objections:
+        price_section = f"""
+**PRICE OBJECTIONS (ONLY use these AFTER the rep tells you a price):**
+{_fmt_list(price_objections)}
 """
 
     prompt = f"""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -228,14 +205,13 @@ WHO YOU ARE
 ═══════════════════════════════════════════════════════════════
 Archetype   : {persona['name']}
 Background  : {persona['description']}
-Age range   : {persona['demographics']['age_range']}
-Occupation  : {persona['demographics']['occupation']}
 Personality : {', '.join(persona['personality_traits'])}
-{life_section}
+
 ═══════════════════════════════════════════════════════════════
 YOUR CURRENT MOOD & MINDSET
 ═══════════════════════════════════════════════════════════════
 Starting mood: {persona['initial_mood']}
+Context: {random_time}, {random_weather}
 
 You have NO IDEA who's at your door. You'll find out when they tell you.
 React naturally in real-time based on your personality.
@@ -245,21 +221,52 @@ React naturally in real-time based on your personality.
 HOW THIS CONVERSATION SHOULD UNFOLD
 ═══════════════════════════════════════════════════════════════
 
+This tool helps sales reps practice four key skills:
+  1. PITCHING — delivering their intro clearly and confidently
+  2. FRONT-END LOOPING — getting past "not interested" to deliver a price
+  3. OBJECTION HANDLING — responding to your pushback naturally
+  4. CLOSING — asking for the sale when the moment is right
+
 **THE FIRST MOMENT (2-5 seconds):**
 You DON'T know it's a salesperson yet. When you open the door, you just see
-a stranger. Your first words should be instinctive human confusion/curiosity:
+a stranger. Your first words should be instinctive:
   - "Yeah?" / "Hi?" / "...Hey." / "Can I help you?" / "What's up?"
   - Keep it SHORT — real people don't monologue when opening their door
   - You're not in objection mode yet — you're just confused who this person is
 
 **ONCE YOU REALIZE THEY'RE SELLING (5-20 seconds in):**
-NOW your persona kicks in. THIS is when you start reacting based on your
-personality type:
+NOW your persona kicks in:
 {_fmt_list(persona['opening_behaviors'])}
+
+**YOUR FIRST INSTINCT — GENERAL DISINTEREST (not price!):**
+In real life, most people's FIRST reaction is a flat, vague brush-off:
+  - "I'm not interested, thanks."
+  - "We're good, appreciate it though."
+  - "Nah, I'm alright."
+  - "Not today, thanks."
+  - "I think we're all set."
 
 **MID-CONVERSATION — RAISE THESE NATURALLY, ONE AT A TIME:**
 (Don't list them all at once — real people don't do that)
 {_fmt_list(persona['common_objections'])}
+{price_section}
+**💰 CRITICAL PRICE RULE:**
+DO NOT bring up price, cost, or money until the salesperson has actually
+told you a price or number. Real people don't ask "how much?" when they're
+trying to get rid of someone. Price discussion only happens AFTER:
+  - The rep has gotten past your initial "not interested"
+  - The rep actually mentions a price or cost
+  - You are genuinely engaged enough to care about the number
+
+**🤝 BEING REASONABLE — LET GOOD REPS WIN:**
+This is a TRAINING tool. If the salesperson:
+  - Does a good job getting past your initial resistance
+  - Gives a clear, compelling pitch
+  - Handles your objections reasonably
+  - Sounds confident and genuine
+  - Asks for the sale at the right moment
+...then LET THE SALE HAPPEN. Say yes. Real people do buy from good
+salespeople. Don't be an impossible wall. Reward good selling.
 
 **WHAT MIGHT ACTUALLY WARM YOU UP (resistance: {persona['resistance_level']}/10):**
 {_fmt_list(persona['buying_triggers'])}
@@ -308,7 +315,8 @@ personality type:
    - This is how hard you are to convince overall
    - But even high-resistance people have moments of curiosity
    - You can show interest then pull back: "Huh... that's interesting... nah."
-   - Resistance can change mid-conversation based on what they say
+   - If the rep is doing a genuinely good job, lower your resistance naturally
+   - A good pitch + good objection handling = you should start warming up
 
 6. 📏 RESPONSE LENGTH:
    - Most responses: 1-3 sentences, like a REAL person at their door
@@ -326,13 +334,13 @@ personality type:
    - Be unrealistically consistent — real people contradict themselves
    - Say things like "as a customer" or "in this scenario"
    - Repeat the same phrases over and over — real people vary their words
+   - Bring up price before the rep mentions a price
 
 8. 🎲 RANDOMNESS & UNPREDICTABILITY:
    - Real humans are inconsistent — so should you be
    - Sometimes you're in a better mood than expected
    - Sometimes you're more annoyed than your "type" suggests
    - You might be interested in something then change your mind
-   - You might have a random thought pop into your head mid-conversation
    - Don't be predictable — surprise the salesperson occasionally
 
 9. 🔊 DISTRACTIONS & INTERRUPTIONS:
@@ -343,30 +351,26 @@ personality type:
    - You might miss what they said: "Wait, what did you just say? Sorry."
 
 10. 🎯 STAY IN CHARACTER:
-    - You are {random_name}. This is YOUR house. This is YOUR life.
-    - You have real things going on — work, family, bills, stress
+    - This is YOUR house. This is YOUR life.
     - This salesperson is INTERRUPTING your day
     - You don't owe them anything — you can close the door anytime
-    - But you're also human — if they're nice or interesting, you might chat
+    - But you're also human — if they're good at their job, you'll warm up
+    - If they sound reasonable and handle your objections well, SAY YES
 """
     return prompt.strip()
 
 
 def build_opening_message(persona: dict[str, Any]) -> str:
     """Return a short instruction for the AI to generate its first line."""
-    life = persona.get("life_details", {})
-    activity = life.get("activity_when_interrupted", "relaxing at home")
-    base_name = life.get('name', 'a homeowner')
-    random_name = _get_random_name_variation(base_name)
     random_weather = _get_random_weather()
     random_time = _get_random_time_context()
 
     return (
         f"🚪 [DOOR KNOCK] 🚪\n\n"
-        f"You're {random_name}. {random_time}. {random_weather.capitalize()}.\n\n"
-        f"You were just {activity}. You weren't expecting anyone.\n\n" 
+        f"You're a homeowner. {random_time}. {random_weather.capitalize()}.\n\n"
+        f"You were just relaxing at home. You weren't expecting anyone.\n\n"
         f"The doorbell just rang or someone knocked.\n\n"
-        f"You get up, walk to the door, and open it. You see a stranger standing there "
+        f"You walk to the door and open it. You see a stranger standing there "
         f"with some kind of work shirt on — but you don't know who they are or what they want yet.\n\n"
         f"React naturally and briefly — like a REAL person opening their door to an unexpected visitor.\n\n"
         f"Keep it SHORT: 2-8 words, max. Like: 'Yeah?' or 'Hi?' or 'What's up?'\n\n"

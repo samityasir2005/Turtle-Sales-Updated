@@ -20,6 +20,24 @@ CORS(app)  # Enable CORS for frontend communication
 sessions = {}
 
 
+import re
+
+def _is_hallucination(text):
+    """Detect Whisper hallucination loops (e.g. 'benefits, benefits, benefits...')."""
+    if not text:
+        return False
+    words = re.findall(r'\b[a-z]+\b', text.lower())
+    if len(words) < 4:
+        return False
+    # Check if any single word makes up 50%+ of all words
+    from collections import Counter
+    counts = Counter(words)
+    most_common_word, most_common_count = counts.most_common(1)[0]
+    if most_common_count / len(words) >= 0.5:
+        return True
+    return False
+
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint."""
@@ -156,24 +174,23 @@ def transcribe_audio(session_id):
         print(f"Attempting transcription with filename: {audio_buffer.name}")
         
         try:
-            # Use detailed prompt to guide transcription for maximum accuracy
-            transcription_prompt = (
-                "This is a professional door-to-door sales conversation between a salesperson and customer. "
-                "Transcribe with proper grammar, punctuation, and capitalization. "
-                "Common sales terms: products, services, appointment, schedule, pricing, features, benefits."
-            )
+            transcription_prompt = "A casual door-to-door sales conversation."
             
             result = client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_buffer,
                 language="en",
                 prompt=transcription_prompt,
-                temperature=0.0,  # Lower temperature for more accurate transcription
-                response_format="verbose_json"  # Get more detailed response
+                temperature=0.0,
+                response_format="verbose_json"
             )
             
             transcript = result.text.strip()
             print(f"Transcription result: '{transcript}'")
+
+            if _is_hallucination(transcript):
+                print("Detected Whisper hallucination, discarding.")
+                return jsonify({'transcript': ''})
             
             return jsonify({
                 'transcript': transcript
@@ -213,12 +230,7 @@ def transcribe_audio(session_id):
                     audio_buffer2 = io.BytesIO(converted_bytes)
                     audio_buffer2.name = "recording.mp3"
                     
-                    # Use same detailed prompt for maximum accuracy
-                    transcription_prompt = (
-                        "This is a professional door-to-door sales conversation between a salesperson and customer. "
-                        "Transcribe with proper grammar, punctuation, and capitalization. "
-                        "Common sales terms: products, services, appointment, schedule, pricing, features, benefits."
-                    )
+                    transcription_prompt = "A casual door-to-door sales conversation."
                     
                     result = client.audio.transcriptions.create(
                         model="whisper-1",
@@ -236,6 +248,10 @@ def transcribe_audio(session_id):
                     os.unlink(temp_in_path)
                     os.unlink(temp_out_path)
                     
+                    if _is_hallucination(transcript):
+                        print("Detected Whisper hallucination, discarding.")
+                        return jsonify({'transcript': ''})
+
                     return jsonify({
                         'transcript': transcript
                     })

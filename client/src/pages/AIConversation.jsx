@@ -408,8 +408,8 @@ const AIConversation = () => {
     
     e.preventDefault(); // Prevent default to avoid scrolling/right-click
     
-    if (isProcessing || isLoading || !sessionId) {
-      console.log("❌ Cannot start - isProcessing:", isProcessing, "isLoading:", isLoading, "sessionId:", sessionId);
+    if (isProcessing || isLoading || !sessionId || isPlaying) {
+      console.log("❌ Cannot start - isProcessing:", isProcessing, "isLoading:", isLoading, "sessionId:", sessionId, "isPlaying:", isPlaying);
       return;
     }
     
@@ -1048,13 +1048,13 @@ const AIConversation = () => {
             {/* Push to Talk Button */}
             <div className="mic-button-section">
               <button
-                className={`mic-button-large ${isRecording ? "recording" : ""}`}
+                className={`mic-button-large ${isRecording ? "recording" : ""} ${isPlaying ? "customer-speaking" : ""}`}
                 onPointerDown={handlePressStart}
                 onPointerUp={handlePressEnd}
                 onPointerLeave={handlePressEnd}
                 onPointerCancel={handlePressEnd}
                 onContextMenu={handleContextMenu}
-                disabled={isProcessing || isLoading || !sessionId}
+                disabled={isProcessing || isLoading || !sessionId || isPlaying}
                 title="Hold to record your voice"
                 style={{
                   touchAction: "none",

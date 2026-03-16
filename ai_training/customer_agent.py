@@ -64,36 +64,16 @@ class CustomerAgent:
         )
 
     def _assign_random_voice(self) -> None:
-        """Randomly assign a voice from the appropriate pool based on persona characteristics."""
-        # Check if persona has gender info in life_details or use name as fallback
-        life_details = self.persona.get("life_details", {})
-        persona_name = life_details.get("name", "")
+        """Randomly assign a voice from the appropriate pool based on persona's tts_voice."""
+        default_voice = self.persona.get("tts_voice", config.TTS_DEFAULT_VOICE)
         
-        # Common male names
-        male_names = {"Dave", "Mike", "Chris", "Brian", "Steve", "Jeff", "Tom", "Dan",
-                     "Marcus", "James", "Andre", "Carlos", "Kevin", "Tony", "Jason", "Eric",
-                     "Rick", "Gary", "Bob", "Frank", "Joe", "Wayne", "Larry",
-                     "David", "Alex", "Ryan", "Jordan", "Ben", "Sam", "Matt"}
-        
-        # Common female names
-        female_names = {"Priya", "Maya", "Anjali", "Sarah", "Jessica", "Emily", "Rachel", "Lauren",
-                       "Linda", "Carol", "Barbara", "Susan", "Nancy", "Diane", "Kathy", "Sharon",
-                       "Amy", "Jennifer", "Julie", "Lisa", "Michelle", "Kelly", "Stephanie"}
-        
-        # Determine gender and select random voice from appropriate pool
-        if persona_name in male_names:
+        # Use the default voice's gender pool to pick a random voice
+        if default_voice in self.MALE_VOICES:
             selected_voice = random.choice(self.MALE_VOICES)
-        elif persona_name in female_names:
+        elif default_voice in self.FEMALE_VOICES:
             selected_voice = random.choice(self.FEMALE_VOICES)
         else:
-            # Default to neutral or use the persona's specified voice
-            default_voice = self.persona.get("tts_voice", config.TTS_DEFAULT_VOICE)
-            if default_voice in self.MALE_VOICES:
-                selected_voice = random.choice(self.MALE_VOICES)
-            elif default_voice in self.FEMALE_VOICES:
-                selected_voice = random.choice(self.FEMALE_VOICES)
-            else:
-                selected_voice = random.choice(self.NEUTRAL_VOICES)
+            selected_voice = random.choice(self.NEUTRAL_VOICES)
         
         # Assign the selected voice to the persona for this session
         self.persona["tts_voice"] = selected_voice

@@ -528,6 +528,13 @@
   transform: none;
 }
 
+.mic-button-large.customer-speaking {
+  background: #9e9e9e;
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .mic-icon {
   font-size: 2.5rem;
   color: white;
