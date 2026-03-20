@@ -75,7 +75,9 @@ def greeting_tts():
         
         return jsonify({
             'audio': audio_base64,
-            'format': 'mp3'
+            'format': 'mp3',
+            'voice': voice,
+            'speed': config.TTS_SPEED
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -304,7 +306,9 @@ def text_to_speech(session_id):
         
         return jsonify({
             'audio': audio_base64,
-            'format': 'mp3'
+            'format': 'mp3',
+            'voice': voice,
+            'speed': config.TTS_SPEED
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

@@ -5,9 +5,9 @@ load_dotenv()
 
 # ── OpenAI Configuration ──────────────────────────────────────────────
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # Faster, cheaper than gpt-4o
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.1")
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.85"))
-MAX_TOKENS = int(os.getenv("MAX_TOKENS", "200"))  # Slightly longer responses
+MAX_TOKENS = int(os.getenv("MAX_TOKENS", "300"))  # Slightly longer responses
 
 # ── Paths ─────────────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

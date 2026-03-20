@@ -5,15 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FiMic,
   FiMicOff,
-  FiSend,
   FiRefreshCw,
   FiArrowLeft,
   FiVolume2,
-  FiUser,
-  FiMessageSquare,
   FiAlertCircle,
   FiHelpCircle,
 } from "react-icons/fi";
+import HolographicHead from "../components/HolographicHead";
 import "../styles/AIConversation.css";
 
 const API_BASE_URL = "http://localhost:5001/api";
@@ -44,14 +42,60 @@ const AIConversation = () => {
   // Refs
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
   const recordingStartTimeRef = useRef(null);
   const hasInitialized = useRef(false);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
-  const greetingAudioRef = useRef(null);
+  const playbackAudioUrlRef = useRef(null);
+  const ttsAnalyserRef = useRef({
+    audioContext: null,
+    sourceNode: null,
+    analyser: null,
+    dataArray: null,
+  });
+
+  const setupTtsAnalyser = async (audioElement) => {
+    if (!audioElement) return;
+
+    try {
+      const existing = ttsAnalyserRef.current;
+      if (!existing.audioContext || existing.audioContext.state === "closed") {
+        existing.audioContext = new (
+          window.AudioContext || window.webkitAudioContext
+        )();
+      }
+
+      if (!existing.sourceNode) {
+        existing.sourceNode = existing.audioContext.createMediaElementSource(
+          audioElement,
+        );
+      }
+
+      if (!existing.analyser) {
+        existing.analyser = existing.audioContext.createAnalyser();
+        existing.analyser.fftSize = 512;
+        existing.dataArray = new Uint8Array(existing.analyser.frequencyBinCount);
+
+        existing.sourceNode.connect(existing.analyser);
+        existing.analyser.connect(existing.audioContext.destination);
+      }
+
+      if (existing.audioContext.state === "suspended") {
+        await existing.audioContext.resume();
+      }
+    } catch (err) {
+      console.error("TTS analyser setup error:", err);
+    }
+  };
+
+  const revokePlaybackUrl = () => {
+    if (playbackAudioUrlRef.current) {
+      URL.revokeObjectURL(playbackAudioUrlRef.current);
+      playbackAudioUrlRef.current = null;
+    }
+  };
 
   useEffect(() => {
     // Force scroll to top immediately
@@ -81,16 +125,14 @@ const AIConversation = () => {
   }, [token, navigate]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest", // Only scroll within container, not entire page
-      inline: "nearest",
-    });
-  };
+    return () => {
+      revokePlaybackUrl();
+      const ttsAnalyser = ttsAnalyserRef.current;
+      if (ttsAnalyser.audioContext) {
+        ttsAnalyser.audioContext.close().catch(() => {});
+      }
+    };
+  }, []);
 
   const startNewSession = async () => {
     try {
@@ -160,8 +202,14 @@ const AIConversation = () => {
       const audioUrl = URL.createObjectURL(audioBlob);
 
       if (audioRef.current) {
+        revokePlaybackUrl();
+        playbackAudioUrlRef.current = audioUrl;
+        await setupTtsAnalyser(audioRef.current);
         audioRef.current.src = audioUrl;
-        audioRef.current.onended = () => setIsPlaying(false);
+        audioRef.current.onended = () => {
+          setIsPlaying(false);
+          revokePlaybackUrl();
+        };
         await audioRef.current.play();
       }
     } catch (err) {
@@ -203,12 +251,18 @@ const AIConversation = () => {
         const audioBlob = base64ToBlob(data.audio, "audio/mpeg");
         const audioUrl = URL.createObjectURL(audioBlob);
 
-        if (greetingAudioRef.current) {
-          greetingAudioRef.current.src = audioUrl;
-          greetingAudioRef.current.onended = () => {
+        if (audioRef.current) {
+          revokePlaybackUrl();
+          playbackAudioUrlRef.current = audioUrl;
+          await setupTtsAnalyser(audioRef.current);
+          audioRef.current.src = audioUrl;
+          audioRef.current.onended = () => {
+            setIsPlaying(false);
+            revokePlaybackUrl();
             setOnboardingStage("chooseTour");
           };
-          await greetingAudioRef.current.play();
+          setIsPlaying(true);
+          await audioRef.current.play();
         }
       } else {
         // If TTS fails, just show the choice screen
@@ -812,11 +866,11 @@ const AIConversation = () => {
                   ×
                 </button>
                 <div className="tour-content">
-                  <h3>Chat Area</h3>
+                  <h3>Holographic Customer</h3>
                   <p>
-                    This is where your conversation with the AI customer
-                    appears. You'll see their responses and your messages in
-                    real-time.
+                    This holographic avatar is your AI customer. Its mouth
+                    animation is driven by real voice playback from the TTS
+                    backend.
                   </p>
                 </div>
                 <div className="tour-footer">
@@ -945,53 +999,18 @@ const AIConversation = () => {
 
       {/* Split Screen Layout */}
       <div className="split-container">
-        {/* Left Side: Chat Messages */}
-        <div className="chat-panel">
-          <div className="chat-header">
-            <div className="header-left">
-              <FiMessageSquare />
-              <h3>Conversation</h3>
-            </div>
-          </div>
-          <div className="messages-container">
-            {isLoading ? (
-              <div className="loading-state">
-                <div className="spinner"></div>
-                <p>Starting new training session...</p>
-              </div>
-            ) : (
-              <AnimatePresence>
-                {messages.map((msg, index) => (
-                  <motion.div
-                    key={index}
-                    className={`message ${msg.role}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="message-icon">
-                      {msg.role === "user" ? <FiUser /> : <FiMessageSquare />}
-                    </div>
-                    <div className="message-content">
-                      <div className="message-header">
-                        <span className="message-role">
-                          {msg.role === "user" ? "You" : "Customer"}
-                        </span>
-                        <span className="message-time">
-                          {msg.timestamp.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                      <p className="message-text">{msg.content}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+        {/* Left Side: Holographic Customer */}
+        <div className="hologram-side-panel">
+          <HolographicHead
+            isPlaying={isPlaying}
+            isProcessing={isProcessing}
+            isRecording={isRecording}
+            isLoading={isLoading}
+            conversationEnded={false}
+            audioAnalyserRef={ttsAnalyserRef}
+            messages={messages}
+            liveTranscript={liveTranscript}
+          />
         </div>
 
         {/* Right Side: Recording Panel */}
@@ -1101,7 +1120,6 @@ const AIConversation = () => {
 
       {/* Hidden audio elements for playback */}
       <audio ref={audioRef} style={{ display: "none" }} />
-      <audio ref={greetingAudioRef} style={{ display: "none" }} />
     </div>
   );
 };
