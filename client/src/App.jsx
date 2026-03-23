@@ -1,5 +1,9 @@
 import React from "react";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import {
+  RouterProvider,
+  createBrowserRouter,
+  Navigate,
+} from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Header from "./components/Header";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -95,6 +99,26 @@ const router = createBrowserRouter([
       {
         path: "sales-leaderboard",
         element: <SalesLeaderboard />,
+      },
+      {
+        path: "ai-sales-training",
+        element: (
+          <Navigate
+            to="/turtle-portal"
+            replace
+            state={{ aiTrainerComingSoon: true }}
+          />
+        ),
+      },
+      {
+        path: "ai-conversation",
+        element: (
+          <Navigate
+            to="/turtle-portal"
+            replace
+            state={{ aiTrainerComingSoon: true }}
+          />
+        ),
       },
     ],
   },
