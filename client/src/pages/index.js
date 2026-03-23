@@ -6,4 +6,3 @@ export { default as Register } from "./Register";
 export { default as Logout } from "./Logout";
 export { default as ManageTimeslots } from "./ManageTimeslots";
 export { default as SalesLeaderboard } from "./SalesLeaderboard";
-export { default as AIConversation } from "./AIConversation";

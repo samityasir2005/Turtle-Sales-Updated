@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { UserContext } from "../usercontext/UserContext";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -15,7 +15,6 @@ import {
   FiUsers,
   FiArrowRight,
   FiLogOut,
-  FiCpu,
 } from "react-icons/fi";
 import "../styles/TurtlePortal.css";
 import LoadingSpinner from "../components/LoadingComponents";
@@ -23,6 +22,7 @@ import LoadingSpinner from "../components/LoadingComponents";
 const TurtlePortal = () => {
   const { user, token, setUser, setToken } = useContext(UserContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const [isOwner, setIsOwner] = useState(false);
   const [isManager, setIsManager] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,6 +35,13 @@ const TurtlePortal = () => {
 
     checkUserRole();
   }, [token, navigate]);
+
+  useEffect(() => {
+    if (location.state?.aiTrainerComingSoon) {
+      toast.info("AI Sales Trainer — Coming soon");
+      navigate(".", { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   const checkUserRole = async () => {
     try {
@@ -139,13 +146,6 @@ const TurtlePortal = () => {
       description: "View team performance rankings and achievements",
       route: "/sales-leaderboard",
       color: "orange",
-    },
-    {
-      icon: FiCpu,
-      title: "AI Sales Training",
-      description: "Learn sales with our intelligent AI coach",
-      route: "/ai-sales-training",
-      color: "teal",
     },
   ];
 

@@ -1,5 +1,9 @@
 import React from "react";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import {
+  RouterProvider,
+  createBrowserRouter,
+  Navigate,
+} from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Header from "./components/Header";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -28,7 +32,6 @@ import {
   Login,
   Logout,
   Register,
-  AIConversation,
 } from "./pages";
 import TurtlePortal from "./pages/TurtlePortal";
 import { UserProvider } from "./usercontext/UserContext";
@@ -39,7 +42,6 @@ import ViewTimeslots from "./pages/ViewTimeslots";
 import ViewSales from "./pages/viewsales";
 import EmployeePaystub from "./pages/EmployeePaystub";
 import SalesLeaderboard from "./pages/SalesLeaderboard";
-import AISalesTraining from "./pages/AISalesTraining";
 
 const router = createBrowserRouter([
   {
@@ -104,11 +106,23 @@ const router = createBrowserRouter([
       },
       {
         path: "ai-sales-training",
-        element: <AISalesTraining />,
+        element: (
+          <Navigate
+            to="/turtle-portal"
+            replace
+            state={{ aiTrainerComingSoon: true }}
+          />
+        ),
       },
       {
         path: "ai-conversation",
-        element: <AIConversation />,
+        element: (
+          <Navigate
+            to="/turtle-portal"
+            replace
+            state={{ aiTrainerComingSoon: true }}
+          />
+        ),
       },
     ],
   },
