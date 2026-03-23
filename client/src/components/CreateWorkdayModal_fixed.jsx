@@ -8,57 +8,28 @@ const CreateWorkdayModal = ({
   date,
   onWorkdayCreated,
   employees = [],
-  workday = null, // For editing existing workdays
-  isEditing = false, // Flag to indicate editing mode
 }) => {
   const [timeslots, setTimeslots] = useState([
     {
-      startTime: "10:00",
-      endTime: "12:00",
+      startTime: "09:00",
+      endTime: "11:00",
       maxEmployees: 2,
       assignedUsers: [],
     },
   ]);
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Populate form when editing existing workday
-  useEffect(() => {
-    if (isEditing && workday) {
-      setTimeslots(workday.timeslots || []);
-    } else if (!isEditing) {
-      // Reset form for new workday
-      setTimeslots([
-        {
-          startTime: "10:00",
-          endTime: "12:00",
-          maxEmployees: 2,
-          assignedUsers: [],
-        },
-      ]);
-    }
-  }, [isEditing, workday]);
-
-  // Prevent body scroll when modal is open and ensure fullscreen immediately
+  // Prevent body scroll when modal is open
   useEffect(() => {
     if (show) {
-      // Prevent body scroll but allow modal content scroll
       document.body.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.width = "100%";
-      document.body.style.height = "100%";
     } else {
-      // Restore body scroll
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
-      document.body.style.height = "";
+      document.body.style.overflow = "unset";
     }
     
     return () => {
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
-      document.body.style.height = "";
+      document.body.style.overflow = "unset";
     };
   }, [show]);
 
@@ -83,74 +54,19 @@ const CreateWorkdayModal = ({
   };
 
   const addTimeslot = () => {
-    // Check maximum limit
-    if (timeslots.length >= 12) {
-      toast.error("Maximum 12 timeslots allowed per day");
-      return;
-    }
-
-    // Get the last timeslot's end time
-    const lastSlot = timeslots[timeslots.length - 1];
-    const startTime = lastSlot?.endTime || "10:00";
-    
-    // Calculate end time (2 hours after start time)
-    const [hours, minutes] = startTime.split(':');
-    const startHour = parseInt(hours);
-    const endHour = Math.min(startHour + 2, 23); // Cap at 23:00
-    const endTime = `${endHour.toString().padStart(2, '0')}:${minutes}`;
-    
     setTimeslots([
       ...timeslots,
       {
-        startTime,
-        endTime,
+        startTime: "09:00",
+        endTime: "11:00",
         maxEmployees: 2,
         assignedUsers: [],
       },
     ]);
   };
 
-  const removeTimeslot = async (index) => {
-    if (timeslots.length <= 1) {
-      toast.error("At least one timeslot is required");
-      return;
-    }
-
-    const timeslotToRemove = timeslots[index];
-    
-    // If editing and timeslot has an ID, confirm deletion
-    if (isEditing && timeslotToRemove._id && timeslotToRemove._id.length === 24) {
-      if (
-        !window.confirm(
-          "Are you sure you want to delete this timeslot? This action cannot be undone."
-        )
-      ) {
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const authToken = JSON.parse(localStorage.getItem("auth"));
-        await axios.delete(
-          `${import.meta.env.VITE_API_URL}/workdays/${workday._id}/timeslots/${timeslotToRemove._id}`,
-          {
-            headers: { Authorization: `Bearer ${authToken}` },
-          }
-        );
-
-        toast.success("Timeslot deleted successfully");
-        // Remove from local state
-        setTimeslots(timeslots.filter((_, i) => i !== index));
-      } catch (err) {
-        console.error("Error deleting timeslot:", err);
-        toast.error("Failed to delete timeslot");
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      // Just remove from local state for new timeslots
-      setTimeslots(timeslots.filter((_, i) => i !== index));
-    }
+  const removeTimeslot = (index) => {
+    setTimeslots(timeslots.filter((_, i) => i !== index));
   };
 
   const updateTimeslot = (index, field, value) => {
@@ -225,36 +141,24 @@ const CreateWorkdayModal = ({
       const workdayData = {
         date: date.toISOString(),
         timeslots,
+        notes: notes.trim(),
       };
 
-      if (isEditing && workday) {
-        // Update existing workday
-        await axios.put(
-          `${import.meta.env.VITE_API_URL}/workdays/${workday._id}`,
-          workdayData,
-          {
-            headers: { Authorization: `Bearer ${authToken}` },
-          }
-        );
-        toast.success("Workday updated successfully!");
-      } else {
-        // Create new workday
-        await axios.post(
-          `${import.meta.env.VITE_API_URL}/workdays`,
-          workdayData,
-          {
-            headers: { Authorization: `Bearer ${authToken}` },
-          }
-        );
-        toast.success("Workday created successfully!");
-      }
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/workdays`,
+        workdayData,
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }
+      );
       
+      toast.success("Workday created successfully!");
       onWorkdayCreated();
       onClose();
     } catch (error) {
-      console.error("Error saving workday:", error);
+      console.error("Error creating workday:", error);
       toast.error(
-        error.response?.data?.error || `Failed to ${isEditing ? 'update' : 'create'} workday`
+        error.response?.data?.error || "Failed to create workday"
       );
     } finally {
       setLoading(false);
@@ -270,26 +174,26 @@ const CreateWorkdayModal = ({
   if (!show) return null;
 
   return (
-    <div style={styles.fullscreenContainer}>
-      {/* Native Header */}
-      <div style={styles.header}>
-        <button style={styles.cancelBtn} onClick={handleClose} disabled={loading}>
-          Cancel
-        </button>
-        <h1 style={styles.title}>
-          {isEditing ? 'Edit Workday' : 'Create Workday'}
-        </h1>
-        <div style={{width: '60px'}}></div> {/* Spacer for centering */}
-      </div>
+    <div style={styles.overlay} onClick={handleClose}>
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div>
+            <h2 style={styles.title}>Create Workday</h2>
+            <p style={styles.subtitle}>{formatDate(date)}</p>
+          </div>
+          <button 
+            style={styles.closeBtn} 
+            onClick={handleClose}
+            disabled={loading}
+          >
+            ✕
+          </button>
+        </div>
 
-      {/* Date subtitle */}
-      <div style={styles.subtitle}>
-        {formatDate(date)}
-      </div>
-
-      {/* Scrollable Content */}
-      <div style={styles.content}>
-        <form onSubmit={handleSubmit}>
+        {/* Scrollable Content */}
+        <div style={styles.content}>
+          <form onSubmit={handleSubmit}>
             {/* Timeslots Section */}
             <div style={styles.section}>
               <div style={styles.sectionHeader}>
@@ -297,13 +201,10 @@ const CreateWorkdayModal = ({
                 <button
                   type="button"
                   onClick={addTimeslot}
-                  style={{
-                    ...styles.addBtn,
-                    ...(timeslots.length >= 12 ? styles.btnDisabled : {})
-                  }}
-                  disabled={loading || timeslots.length >= 12}
+                  style={styles.addBtn}
+                  disabled={loading}
                 >
-                  + Add Slot {timeslots.length >= 12 ? "(Max 12)" : ""}
+                  + Add Slot
                 </button>
               </div>
 
@@ -409,25 +310,46 @@ const CreateWorkdayModal = ({
                 </div>
               ))}
             </div>
+
+            {/* Notes Section */}
+            <div style={styles.section}>
+              <label style={styles.label}>Notes (Optional)</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Special instructions or requirements..."
+                maxLength={300}
+                rows={3}
+                style={styles.textarea}
+                disabled={loading}
+              />
+              <div style={styles.charCount}>
+                <small>{notes.length}/300</small>
+              </div>
+            </div>
           </form>
         </div>
 
-      {/* Bottom Button Bar - Always Visible */}
-      <div style={styles.bottomBar}>
-        <div style={styles.buttonRow}>
-          <button 
-            style={styles.cancelBottomBtn}
+        {/* Actions */}
+        <div style={styles.actions}>
+          <button
+            type="button"
             onClick={handleClose}
+            style={styles.cancelBtn}
             disabled={loading}
           >
             Cancel
           </button>
-          <button 
-            style={{...styles.createBtn, ...(loading ? styles.btnDisabled : {})}} 
+          <button
+            type="submit"
             onClick={handleSubmit}
+            style={{
+              ...styles.createBtn,
+              ...(loading ? styles.btnDisabled : {}),
+            }}
             disabled={loading || timeslots.length === 0}
           >
-            {loading ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Workday" : "Create Workday")}
+            {loading ? "Creating..." : "Create Workday"}
           </button>
         </div>
       </div>
@@ -435,87 +357,64 @@ const CreateWorkdayModal = ({
   );
 };
 
-// Inline styles for fullscreen Instagram-like experience
+// Inline styles for guaranteed scrolling functionality
 const styles = {
-  fullscreenContainer: {
+  overlay: {
     position: "fixed",
     top: 0,
     left: 0,
-    right: 0,
-    bottom: 0,
-    width: "100vw",
-    height: "100vh",
-    backgroundColor: "#f2f2f7",
-    zIndex: 9999, // Higher z-index to ensure it's on top
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    zIndex: 1000,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px",
+  },
+  modal: {
+    backgroundColor: "white",
+    borderRadius: "12px",
+    width: "100%",
+    maxWidth: "500px",
+    maxHeight: "90vh",
     display: "flex",
     flexDirection: "column",
-    overflow: "hidden",
+    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
   },
   header: {
+    padding: "20px",
+    borderBottom: "1px solid #e0e0e0",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "16px 20px",
-    paddingTop: "max(16px, env(safe-area-inset-top))", // Safe area for notched devices
-    backgroundColor: "#ffffff", // White background for better contrast
-    borderBottom: "1px solid #c6c6c8",
     flexShrink: 0,
-    minHeight: "70px", // Slightly taller for better button visibility
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)", // Subtle shadow
-  },
-  cancelBtn: {
-    background: "none",
-    border: "none",
-    color: "#007aff",
-    fontSize: "17px",
-    fontWeight: "400",
-    cursor: "pointer",
-    padding: "12px 16px", // Larger touch area
-    minHeight: "44px", // iOS minimum touch target
-    minWidth: "44px",
-    borderRadius: "8px",
   },
   title: {
     margin: 0,
-    fontSize: "17px",
+    fontSize: "18px",
     fontWeight: "600",
-    color: "#000",
-    textAlign: "center",
-  },
-  doneBtn: {
-    background: "none",
-    border: "none",
-    color: "#34C759",
-    fontSize: "17px",
-    fontWeight: "600",
-    cursor: "pointer",
-    padding: "12px 16px", // Larger touch area
-    minHeight: "44px", // iOS minimum touch target
-    minWidth: "44px",
-    borderRadius: "8px",
-  },
-  btnDisabled: {
-    color: "#c7c7cc",
-    cursor: "not-allowed",
+    color: "#333",
   },
   subtitle: {
-    textAlign: "center",
-    color: "#8e8e93",
-    fontSize: "13px",
-    padding: "8px 20px 16px",
-    borderBottom: "0.5px solid #c6c6c8",
-    backgroundColor: "#ffffff", // Match header background
-    flexShrink: 0,
+    margin: "4px 0 0 0",
+    fontSize: "14px",
+    color: "#666",
+  },
+  closeBtn: {
+    background: "none",
+    border: "none",
+    fontSize: "20px",
+    cursor: "pointer",
+    padding: "8px",
+    color: "#666",
+    borderRadius: "4px",
   },
   content: {
     flex: 1,
     overflow: "auto",
-    overflowX: "hidden", // Prevent horizontal scroll
-    padding: "20px 20px 160px 20px", // Even more bottom padding for comfortable scrolling
-    backgroundColor: "#f2f2f7",
-    WebkitOverflowScrolling: "touch",
-    // Ensure content can scroll
-    touchAction: "pan-y",
+    padding: "20px",
+    minHeight: 0, // Critical for flex scrolling
   },
   section: {
     marginBottom: "24px",
@@ -533,16 +432,13 @@ const styles = {
     color: "#333",
   },
   addBtn: {
-    backgroundColor: "#34C759",
+    backgroundColor: "#007AFF",
     color: "white",
     border: "none",
-    padding: "12px 20px", // Better mobile padding
+    padding: "8px 16px",
     borderRadius: "8px",
     fontSize: "14px",
-    fontWeight: "600",
     cursor: "pointer",
-    minHeight: "44px", // iOS minimum touch target
-    boxShadow: "0 2px 4px rgba(52, 199, 89, 0.2)",
   },
   timeslot: {
     backgroundColor: "#f8f9fa",
@@ -558,7 +454,7 @@ const styles = {
     marginBottom: "16px",
   },
   slotNumber: {
-    backgroundColor: "#34C759",
+    backgroundColor: "#007AFF",
     color: "white",
     width: "24px",
     height: "24px",
@@ -570,7 +466,7 @@ const styles = {
     fontWeight: "600",
   },
   timePreview: {
-    color: "#34C759",
+    color: "#007AFF",
     fontWeight: "500",
     fontSize: "14px",
   },
@@ -623,7 +519,7 @@ const styles = {
     alignItems: "center",
   },
   employeeSelected: {
-    backgroundColor: "#34C759",
+    backgroundColor: "#007AFF",
     color: "white",
   },
   employeeDisabled: {
@@ -633,49 +529,62 @@ const styles = {
   checkmark: {
     fontWeight: "bold",
   },
-  bottomBar: {
-    position: "fixed",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#f2f2f7",
-    padding: "20px",
-    paddingBottom: "max(20px, env(safe-area-inset-bottom))",
-    borderTop: "0.5px solid #c6c6c8",
-    zIndex: 10000,
-    minHeight: "90px", // Ensure consistent height
-    boxSizing: "border-box",
+  textarea: {
+    width: "100%",
+    padding: "12px",
+    border: "1px solid #ddd",
+    borderRadius: "8px",
+    fontSize: "16px",
+    resize: "vertical",
+    minHeight: "80px",
+    fontFamily: "inherit",
   },
-  buttonRow: {
+  charCount: {
+    textAlign: "right",
+    marginTop: "4px",
+    color: "#666",
+  },
+  actions: {
+    padding: "20px",
+    borderTop: "1px solid #e0e0e0",
     display: "flex",
     gap: "12px",
-    alignItems: "center",
+    flexShrink: 0,
   },
-  cancelBottomBtn: {
-    flex: "0 0 auto",
-    backgroundColor: "transparent",
-    color: "#007aff",
-    border: "1px solid #007aff",
-    padding: "16px 24px",
-    borderRadius: "12px",
-    fontSize: "17px",
-    fontWeight: "600",
+  cancelBtn: {
+    flex: 1,
+    padding: "12px",
+    border: "1px solid #ddd",
+    borderRadius: "8px",
+    backgroundColor: "white",
+    color: "#333",
+    fontSize: "16px",
     cursor: "pointer",
-    minHeight: "50px",
   },
   createBtn: {
     flex: 1,
-    backgroundColor: "#34C759",
-    color: "white",
+    padding: "12px",
     border: "none",
-    padding: "16px",
-    borderRadius: "12px",
-    fontSize: "17px",
-    fontWeight: "600",
+    borderRadius: "8px",
+    backgroundColor: "#007AFF",
+    color: "white",
+    fontSize: "16px",
     cursor: "pointer",
-    minHeight: "50px",
-    boxShadow: "0 2px 10px rgba(52, 199, 89, 0.3)",
+    fontWeight: "600",
+  },
+  btnDisabled: {
+    backgroundColor: "#ccc",
+    cursor: "not-allowed",
   },
 };
+
+// Mobile responsive adjustments
+if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+  styles.overlay.padding = "0";
+  styles.modal.borderRadius = "0";
+  styles.modal.maxHeight = "100vh";
+  styles.modal.height = "100vh";
+  styles.inputRow.gridTemplateColumns = "1fr";
+}
 
 export default CreateWorkdayModal;
