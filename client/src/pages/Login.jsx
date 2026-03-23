@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Logo from "../assets/logo.png";
 import { FaEye, FaEyeSlash } from "react-icons/fa6";
 import "../styles/Login.css";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
@@ -36,7 +36,7 @@ const Login = () => {
         if (response.data.firstLogin) {
           navigate("/welcome");
         } else {
-          navigate("/dashboard");
+          navigate(redirectAfterLogin());
         }
 
         window.location.reload();
@@ -59,9 +59,12 @@ const Login = () => {
 
   useEffect(() => {
     if (token !== "") {
-      navigate("/dashboard");
+      const from = location.state?.from?.pathname;
+      const dest =
+        from && from !== "/login" && from !== "/register" ? from : "/dashboard";
+      navigate(dest, { replace: true });
     }
-  }, [token]);
+  }, [token, navigate, location.state]);
 
   return (
     <div className="login-container">

@@ -22,6 +22,17 @@ sessions = {}
 
 import re
 
+
+def _resolve_tts_speed(raw_speed):
+    """Return a safe TTS speed value in provider-supported range."""
+    if raw_speed is None:
+        return config.TTS_SPEED
+    try:
+        parsed = float(raw_speed)
+    except (TypeError, ValueError):
+        return config.TTS_SPEED
+    return max(0.25, min(4.0, parsed))
+
 def _is_hallucination(text):
     """Detect Whisper hallucination loops (e.g. 'benefits, benefits, benefits...')."""
     if not text:
@@ -54,6 +65,7 @@ def greeting_tts():
         data = request.json
         text = data.get('text', '')
         voice = data.get('voice', 'echo')  # Default to echo (male voice)
+        speed = _resolve_tts_speed(data.get('speed'))
         
         if not text:
             return jsonify({'error': 'No text provided'}), 400
@@ -67,7 +79,7 @@ def greeting_tts():
             voice=voice,
             input=text,
             response_format="mp3",
-            speed=config.TTS_SPEED
+            speed=speed
         )
         
         # Return audio as base64
@@ -77,7 +89,7 @@ def greeting_tts():
             'audio': audio_base64,
             'format': 'mp3',
             'voice': voice,
-            'speed': config.TTS_SPEED
+            'speed': speed
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -85,13 +97,10 @@ def greeting_tts():
 
 @app.route('/api/session/start', methods=['POST'])
 def start_session():
-    """Start a new training session with a random or specific persona."""
+    """Start a new training session with a dynamically generated persona."""
     try:
-        data = request.json or {}
-        persona_id = data.get('persona_id')
-        
         # Create new customer agent
-        agent = CustomerAgent(persona_id=persona_id)
+        agent = CustomerAgent()
         
         # Generate session ID
         import uuid
@@ -283,6 +292,7 @@ def text_to_speech(session_id):
         
         data = request.json
         text = data.get('text', '')
+        speed = _resolve_tts_speed(data.get('speed'))
         
         if not text:
             return jsonify({'error': 'No text provided'}), 400
@@ -298,7 +308,7 @@ def text_to_speech(session_id):
             voice=voice,
             input=text,
             response_format="mp3",
-            speed=config.TTS_SPEED  # Faster playback for quicker responses
+            speed=speed
         )
         
         # Return audio as base64
@@ -308,7 +318,7 @@ def text_to_speech(session_id):
             'audio': audio_base64,
             'format': 'mp3',
             'voice': voice,
-            'speed': config.TTS_SPEED
+            'speed': speed
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

@@ -165,7 +165,7 @@
 
 /* === Hologram Panel (replaces Chat Panel) === */
 .hologram-panel {
-  flex: 1.5;
+  flex: 1.2;
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #13181c, #1a2025, #161c20);
@@ -175,28 +175,6 @@
   overflow: hidden;
   min-width: 0;
   position: relative;
-}
-
-.hologram-canvas-stage {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem;
-  position: relative;
-  z-index: 1;
-}
-
-.hologram-canvas-frame {
-  width: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  aspect-ratio: 4 / 5;
-  position: relative;
-  margin: auto;
-  overflow: hidden;
-  border-radius: 14px;
 }
 
 .hologram-contrast-plate {
@@ -218,11 +196,11 @@
   pointer-events: none;
 }
 
-.hologram-canvas {
+.hologram-panel canvas {
   width: 100% !important;
   height: 100% !important;
-  position: absolute !important;
-  inset: 0;
+  flex: 1;
+  position: relative;
   z-index: 1;
 }
 
@@ -347,15 +325,15 @@
   left: 1rem;
   right: 1rem;
   padding: 0.7rem 1rem;
-  background: rgba(18, 21, 24, 0.92);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(115, 128, 138, 0.28);
+  border: 1px solid rgba(46, 125, 50, 0.22);
   border-radius: 14px;
   z-index: 10;
   max-height: 100px;
   overflow-y: auto;
   pointer-events: none;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.36);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .hologram-subtitle::-webkit-scrollbar {
@@ -370,23 +348,16 @@
 .hologram-subtitle-speaker {
   font-size: 0.6rem;
   font-weight: 700;
+  color: #2e7d32;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   display: block;
   margin-bottom: 0.15rem;
 }
 
-.hologram-subtitle-speaker.is-you {
-  color: #66bb6a;
-}
-
-.hologram-subtitle-speaker.is-customer {
-  color: #d7e0e6;
-}
-
 .hologram-subtitle-text {
   font-size: 0.8125rem;
-  color: #ffffff;
+  color: #333333;
   line-height: 1.5;
   margin: 0;
 }
@@ -408,7 +379,7 @@
 
 /* === Recording Panel === */
 .recording-panel {
-  flex: 0.55;
+  flex: 0.8;
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #ffffff 0%, #fbfdfb 100%);
@@ -1658,23 +1629,6 @@
   color: #888;
   line-height: 1.45;
   margin: 0;
-}
-
-.settings-select {
-  min-width: 150px;
-  padding: 0.45rem 0.6rem;
-  border-radius: 8px;
-  border: 1px solid #d6e6d8;
-  background: #ffffff;
-  color: #2f3b33;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.settings-select:focus {
-  outline: none;
-  border-color: #66bb6a;
-  box-shadow: 0 0 0 2px rgba(102, 187, 106, 0.18);
 }
 
 /* === Toggle Switch === */

@@ -23,7 +23,6 @@ import "../styles/AIConversation.css";
 
 const API_BASE_URL =
   import.meta.env.VITE_AI_API_URL || "http://localhost:5001/api";
-const TTS_PLAYBACK_SPEED = 1.2;
 const GLANCE_TIMEOUT_MS = 4500;
 const DETECTION_THROTTLE_MS = 66;
 const GAZE_HISTORY_SIZE = 5;
@@ -170,9 +169,6 @@ const AIConversation = () => {
   const [isEvaluating, setIsEvaluating] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [inputMode, setInputMode] = useState(
-    localStorage.getItem("turtlesales_input_mode") || "push_to_talk",
-  );
   const [eyeContactEnabled, setEyeContactEnabled] = useState(false);
   const [eyeContactStatus, setEyeContactStatus] = useState(null);
   const [eyeContactLevel, setEyeContactLevel] = useState("good");
@@ -197,45 +193,10 @@ const AIConversation = () => {
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
   const greetingAudioRef = useRef(null);
-  const vadRafRef = useRef(null);
-  const vadStreamRef = useRef(null);
-  const vadAudioContextRef = useRef(null);
-  const vadAnalyserRef = useRef(null);
-  const vadDataRef = useRef(null);
-  const vadStateRef = useRef({ speechMs: 0, silenceMs: 0 });
-  const runtimeStateRef = useRef({
-    isLoading: false,
-    isProcessing: false,
-    isPlaying: false,
-    isRecording: false,
-    conversationEnded: false,
-    sessionId: null,
-    onboardingStage: "greeting",
-  });
   const hintTimerRef = useRef(null);
   const hintAutoCloseRef = useRef(null);
   const userHasSpokenRef = useRef(false);
   const audioAnalyserRef = useRef({ analyser: null, dataArray: null });
-
-  useEffect(() => {
-    runtimeStateRef.current = {
-      isLoading,
-      isProcessing,
-      isPlaying,
-      isRecording,
-      conversationEnded,
-      sessionId,
-      onboardingStage,
-    };
-  }, [
-    isLoading,
-    isProcessing,
-    isPlaying,
-    isRecording,
-    conversationEnded,
-    sessionId,
-    onboardingStage,
-  ]);
 
   useEffect(() => {
     if (!sessionStartTime || conversationEnded) return;
@@ -432,7 +393,7 @@ const AIConversation = () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, speed: TTS_PLAYBACK_SPEED }),
+          body: JSON.stringify({ text }),
         },
       );
 
@@ -477,11 +438,7 @@ const AIConversation = () => {
       const response = await fetch(`${API_BASE_URL}/greeting/tts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: greetingText,
-          voice: "echo",
-          speed: TTS_PLAYBACK_SPEED,
-        }),
+        body: JSON.stringify({ text: greetingText, voice: "echo" }),
       });
 
       if (response.ok) {
@@ -566,17 +523,6 @@ const AIConversation = () => {
   // ── Recording ───────────────────────────────────────────────────
 
   const startRecording = async () => {
-    const rt = runtimeStateRef.current;
-    if (
-      rt.isRecording ||
-      rt.isProcessing ||
-      rt.isPlaying ||
-      rt.conversationEnded ||
-      !rt.sessionId
-    ) {
-      return;
-    }
-
     try {
       setLiveTranscript("");
 
@@ -626,7 +572,6 @@ const AIConversation = () => {
       };
 
       mediaRecorder.onstop = async () => {
-        runtimeStateRef.current.isRecording = false;
         const recordingDuration = Date.now() - recordingStartTimeRef.current;
         console.log("Recording stopped. Duration:", recordingDuration, "ms");
         console.log("Total chunks:", audioChunksRef.current.length);
@@ -669,7 +614,6 @@ const AIConversation = () => {
       mediaRecorderRef.current = mediaRecorder;
       // Start recording - don't pass timeslice to get one complete valid audio file
       mediaRecorder.start();
-      runtimeStateRef.current.isRecording = true;
       setIsRecording(true);
       console.log("Recording started with mimeType:", mimeType);
 
@@ -697,13 +641,9 @@ const AIConversation = () => {
   };
 
   const stopRecording = () => {
-    if (
-      mediaRecorderRef.current &&
-      mediaRecorderRef.current.state !== "inactive"
-    ) {
+    if (mediaRecorderRef.current && isRecording) {
       console.log("✋ Stopping recording...");
       mediaRecorderRef.current.stop();
-      runtimeStateRef.current.isRecording = false;
       setIsRecording(false);
     }
   };
@@ -711,7 +651,6 @@ const AIConversation = () => {
   // Push-to-talk event handlers - using pointer events for reliable cross-device support
   const handlePressStart = (e) => {
     e.preventDefault();
-    if (inputMode !== "push_to_talk") return;
     if (
       isProcessing ||
       isLoading ||
@@ -726,7 +665,6 @@ const AIConversation = () => {
   };
 
   const handlePressEnd = (e) => {
-    if (inputMode !== "push_to_talk") return;
     console.log(
       "🟢 Press END event:",
       e.type,
@@ -747,173 +685,6 @@ const AIConversation = () => {
     e.stopPropagation();
     return false;
   };
-
-  const stopVoiceActivityMonitoring = () => {
-    if (vadRafRef.current) {
-      cancelAnimationFrame(vadRafRef.current);
-      vadRafRef.current = null;
-    }
-    if (vadStreamRef.current) {
-      vadStreamRef.current.getTracks().forEach((t) => t.stop());
-      vadStreamRef.current = null;
-    }
-    if (vadAudioContextRef.current) {
-      vadAudioContextRef.current.close();
-      vadAudioContextRef.current = null;
-    }
-    vadAnalyserRef.current = null;
-    vadDataRef.current = null;
-    vadStateRef.current = { speechMs: 0, silenceMs: 0 };
-  };
-
-  const startVoiceActivityMonitoring = async () => {
-    if (vadRafRef.current) return;
-
-    const rt = runtimeStateRef.current;
-    if (
-      inputMode !== "voice_activity" ||
-      rt.onboardingStage !== "complete" ||
-      !rt.sessionId ||
-      rt.conversationEnded
-    ) {
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (ctx.state === "suspended") await ctx.resume();
-
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.35;
-
-      const source = ctx.createMediaStreamSource(stream);
-      source.connect(analyser);
-
-      vadStreamRef.current = stream;
-      vadAudioContextRef.current = ctx;
-      vadAnalyserRef.current = analyser;
-      vadDataRef.current = new Uint8Array(analyser.frequencyBinCount);
-      vadStateRef.current = {
-        speechMs: 0,
-        silenceMs: 0,
-        noiseFloor: 0.018,
-        levelSmooth: 0,
-      };
-
-      let lastTs = performance.now();
-      const loop = (ts) => {
-        const dt = Math.min(120, Math.max(8, ts - lastTs));
-        lastTs = ts;
-
-        const state = runtimeStateRef.current;
-        const blocked =
-          state.isLoading ||
-          state.isProcessing ||
-          state.isPlaying ||
-          state.conversationEnded ||
-          !state.sessionId;
-
-        if (blocked) {
-          vadStateRef.current.speechMs = 0;
-          vadStateRef.current.silenceMs = 0;
-          if (state.isRecording) stopRecording();
-          vadRafRef.current = requestAnimationFrame(loop);
-          return;
-        }
-
-        const data = vadDataRef.current;
-        const a = vadAnalyserRef.current;
-        if (!data || !a) {
-          vadRafRef.current = requestAnimationFrame(loop);
-          return;
-        }
-
-        a.getByteFrequencyData(data);
-        let sum = 0;
-        const start = 2;
-        const end = Math.floor(data.length * 0.65);
-        for (let i = start; i < end; i += 1) sum += data[i];
-        const avg = sum / Math.max(1, end - start);
-        const level = avg / 255;
-        const vadState = vadStateRef.current;
-
-        const levelAlpha = 1 - Math.exp(-dt / 120);
-        vadState.levelSmooth += (level - vadState.levelSmooth) * levelAlpha;
-
-        const noiseTarget = Math.min(vadState.levelSmooth, vadState.noiseFloor);
-        const floorAlpha = 1 - Math.exp(-dt / 900);
-        vadState.noiseFloor += (noiseTarget - vadState.noiseFloor) * floorAlpha;
-        vadState.noiseFloor = Math.min(
-          0.08,
-          Math.max(0.01, vadState.noiseFloor),
-        );
-
-        const speechThreshold = state.isRecording
-          ? vadState.noiseFloor + 0.013
-          : vadState.noiseFloor + 0.026;
-        const isSpeech = vadState.levelSmooth > speechThreshold;
-        if (isSpeech) {
-          vadState.speechMs += dt;
-          vadState.silenceMs = 0;
-        } else {
-          vadState.silenceMs += dt;
-          vadState.speechMs = Math.max(0, vadState.speechMs - dt * 0.4);
-        }
-
-        if (!state.isRecording && vadState.speechMs > 150) {
-          startRecording();
-          vadState.speechMs = 0;
-        }
-
-        if (state.isRecording && vadState.silenceMs > 650) {
-          stopRecording();
-          vadState.silenceMs = 0;
-        }
-
-        vadRafRef.current = requestAnimationFrame(loop);
-      };
-
-      vadRafRef.current = requestAnimationFrame(loop);
-    } catch (err) {
-      console.error("Voice activity monitoring failed:", err);
-      setError("Microphone access is required for voice activity mode.");
-      setInputMode("push_to_talk");
-      localStorage.setItem("turtlesales_input_mode", "push_to_talk");
-      stopVoiceActivityMonitoring();
-    }
-  };
-
-  useEffect(() => {
-    localStorage.setItem("turtlesales_input_mode", inputMode);
-  }, [inputMode]);
-
-  useEffect(() => {
-    const shouldRunVAD =
-      inputMode === "voice_activity" &&
-      onboardingStage === "complete" &&
-      !!sessionId &&
-      !conversationEnded;
-
-    if (shouldRunVAD) {
-      startVoiceActivityMonitoring();
-    } else {
-      stopVoiceActivityMonitoring();
-      if (isRecording) stopRecording();
-    }
-
-    return () => {
-      stopVoiceActivityMonitoring();
-    };
-  }, [inputMode, onboardingStage, sessionId, conversationEnded]);
 
   const transcribeAndSend = async (audioBlob, mimeType) => {
     try {
@@ -1249,7 +1020,6 @@ const AIConversation = () => {
   useEffect(() => {
     return () => {
       stopEyeContactTracking();
-      stopVoiceActivityMonitoring();
     };
   }, []);
 
@@ -1783,11 +1553,7 @@ const AIConversation = () => {
                 !conversationEnded &&
                 sessionId && (
                   <div className="status-pill ready">
-                    <span>
-                      {inputMode === "voice_activity"
-                        ? "Ready - voice activity will auto-record"
-                        : "Ready - hold mic to speak"}
-                    </span>
+                    <span>Ready — hold mic to speak</span>
                   </div>
                 )}
             </div>
@@ -1816,18 +1582,13 @@ const AIConversation = () => {
                   onPointerCancel={handlePressEnd}
                   onContextMenu={handleContextMenu}
                   disabled={
-                    inputMode !== "push_to_talk" ||
                     isProcessing ||
                     isLoading ||
                     !sessionId ||
                     isPlaying ||
                     conversationEnded
                   }
-                  title={
-                    inputMode === "voice_activity"
-                      ? "Voice activity mode handles recording automatically"
-                      : "Hold to record your voice"
-                  }
+                  title="Hold to record your voice"
                   style={{
                     touchAction: "none",
                     userSelect: "none",
@@ -1842,13 +1603,9 @@ const AIConversation = () => {
               <p className="mic-label">
                 {conversationEnded
                   ? "Session Ended"
-                  : inputMode === "voice_activity"
-                    ? isRecording
-                      ? "Listening... release is automatic"
-                      : "Voice activity mode is on"
-                    : isRecording
-                      ? "Release to Send"
-                      : "Hold to Speak"}
+                  : isRecording
+                    ? "Release to Send"
+                    : "Hold to Speak"}
               </p>
             </div>
           </div>
@@ -2042,26 +1799,6 @@ const AIConversation = () => {
                 </button>
               </div>
               <div className="settings-body">
-                <div className="settings-item">
-                  <div className="settings-item-info">
-                    <div className="settings-item-label">
-                      <FiZap size={16} />
-                      <span>Voice Input Mode</span>
-                    </div>
-                    <p className="settings-item-desc">
-                      Choose how your voice recording starts.
-                    </p>
-                  </div>
-                  <select
-                    className="settings-select"
-                    value={inputMode}
-                    onChange={(e) => setInputMode(e.target.value)}
-                  >
-                    <option value="push_to_talk">Push to Talk</option>
-                    <option value="voice_activity">Voice Activity</option>
-                  </select>
-                </div>
-
                 <div className="settings-item">
                   <div className="settings-item-info">
                     <div className="settings-item-label">

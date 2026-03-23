@@ -2,243 +2,185 @@ import React from "react";
 import "../styles/Landing.css";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { FiEdit3, FiTrendingUp, FiClock, FiUsers } from "react-icons/fi";
 import Logo from "../assets/logo.png";
+import DashboardPreview from "../components/DashboardPreview";
+
+const KEY_FEATURES = [
+  {
+    Icon: FiClock,
+    title: "Manage timeslots & schedules",
+    description:
+      "Assign work windows, set availability, and keep your crew aligned on the calendar.",
+    tone: "teal",
+  },
+  {
+    Icon: FiEdit3,
+    title: "Record sales",
+    description:
+      "Log door-to-door sales in the field so every deal is captured and trackable.",
+    tone: "primary",
+  },
+  {
+    Icon: FiTrendingUp,
+    title: "Leaderboard",
+    description:
+      "See team rankings, compare performance, and spotlight top reps.",
+    tone: "forest",
+  },
+  {
+    Icon: FiUsers,
+    title: "Organize your team",
+    description:
+      "Structure your organization, roles, and members so everyone has the right access.",
+    tone: "primary",
+  },
+];
 
 const Landing = () => {
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    navigate("/login");
+    navigate("/register");
   };
 
-  const handleLearnMore = () => {
-    document.getElementById("features-section").scrollIntoView({
-      behavior: "smooth",
-    });
+  const handleWatchDemo = () => {
+    const el = document.getElementById("dashboard-preview");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        duration: 0.8,
-        staggerChildren: 0.15,
-      },
+      transition: { duration: 0.5, staggerChildren: 0.08 },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
+    hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.7, ease: "easeOut" },
+      transition: { duration: 0.45, ease: "easeOut" },
     },
   };
 
   const featureVariants = {
-    hidden: { opacity: 0, y: 40 },
+    hidden: { opacity: 0, y: 24 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: "easeOut" },
-    },
-  };
-
-  const statsVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: { duration: 0.6, ease: "easeOut" },
-    },
-  };
-
-  const stepsVariants = {
-    hidden: { opacity: 0, x: -30 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: { duration: 0.6, ease: "easeOut" },
+      transition: { duration: 0.4, ease: "easeOut" },
     },
   };
 
   return (
     <div className="landing">
       <motion.div
-        className="content"
+        className="landing__content"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        {/* Hero Section */}
-        <motion.div className="hero-section" variants={itemVariants}>
-          <motion.div className="hero-badge" variants={itemVariants}>
-            <span className="badge-text">🚀 Streamline Your Sales Process</span>
+        <section className="landing__hero">
+          <motion.div className="landing__headline" variants={itemVariants}>
+            <span className="landing__h1-line landing__h1-line--regular">
+              Organize Your
+            </span>
+            <span className="landing__h1-line">
+              <span className="landing__h1-accent">Door-to-Door Sales</span>{" "}
+              <span className="landing__h1-line--regular">Team</span>
+            </span>
           </motion.div>
 
-          <motion.h1 className="hero-title" variants={itemVariants}>
-            Organize Your
-            <span className="gradient-text"> Door-to-Door Sales </span>
-            Team
-          </motion.h1>
-
-          <motion.p className="hero-subtitle" variants={itemVariants}>
-            One platform to manage all aspects of door-to-door sales. Record and track sales, manage reps and workers, streamline payroll operations.
+          <motion.p className="landing__subtitle" variants={itemVariants}>
+            One platform to manage all aspects of door-to-door sales. Record and
+            track sales, manage reps and workers, streamline payroll operations.
           </motion.p>
 
-          <motion.div className="hero-actions" variants={itemVariants}>
+          <motion.div className="landing__cta-row" variants={itemVariants}>
             <motion.button
-              className="cta-primary"
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
+              type="button"
+              className="landing__btn landing__btn--primary"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
               onClick={handleGetStarted}
             >
               Get Started
-              <span className="cta-arrow">→</span>
+              <span className="landing__cta-arrow" aria-hidden>
+                →
+              </span>
             </motion.button>
-
             <motion.button
-              className="cta-secondary"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleLearnMore}
+              type="button"
+              className="landing__btn landing__btn--secondary"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={handleWatchDemo}
             >
-              Learn More
+              Watch Demo
             </motion.button>
           </motion.div>
+        </section>
 
-          <motion.div className="trust-indicators" variants={itemVariants}>
-            <div className="trust-item">
-              <span className="trust-icon">✓</span>
-              <span>Easy to Use</span>
-            </div>
-            <div className="trust-item">
-              <span className="trust-icon">✓</span>
-              <span>Organized Workflow</span>
-            </div>
-            <div className="trust-item">
-              <span className="trust-icon">✓</span>
-              <span>Team Management</span>
-            </div>
-          </motion.div>
-        </motion.div>
+        <DashboardPreview />
 
-        {/* Key Benefits Section */}
-        <motion.div
-          className="benefits-section"
+        <motion.section
+          className="landing__features"
+          id="features-section"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
+          viewport={{ once: true, margin: "-40px" }}
         >
-          <motion.div className="benefit-card" variants={statsVariants}>
-            <div className="benefit-icon">🎯</div>
-            <h3>Organized Workflow</h3>
-            <p>Streamline your door-to-door sales operations</p>
-          </motion.div>
-          <motion.div className="benefit-card" variants={statsVariants}>
-            <div className="benefit-icon">📈</div>
-            <h3>Track Performance</h3>
-            <p>Monitor sales activities and team progress</p>
-          </motion.div>
-          <motion.div className="benefit-card" variants={statsVariants}>
-            <div className="benefit-icon">💼</div>
-            <h3>Manage Teams</h3>
-            <p>Coordinate schedules and assignments efficiently</p>
-          </motion.div>
-        </motion.div>
-
-        {/* Features Section - Compact */}
-        <motion.div className="features-section compact" id="features-section">
-          <motion.div className="section-header" variants={itemVariants}>
-            <motion.h2
-              className="section-title compact"
-              variants={itemVariants}
-            >
-              Key Features
-            </motion.h2>
-          </motion.div>
-
-          <motion.div
-            className="features-grid compact"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-          >
-            <motion.div
-              className="feature-card compact"
-              variants={featureVariants}
-              whileHover={{
-                y: -6,
-                transition: { duration: 0.3, ease: "easeOut" },
-              }}
-            >
-              <div className="feature-icon-wrapper compact">
-                <div className="feature-icon">🗓️</div>
-              </div>
-              <h3 className="feature-title">Schedule Management</h3>
-              <p className="feature-description compact">
-                Create work schedules, assign time slots, and track hours
+          <div className="landing__features-inner">
+            <div className="landing__features-head">
+              <span className="landing__features-eyebrow">Platform</span>
+              <h2 className="landing__features-title">Key Features</h2>
+              <p className="landing__features-lead">
+                Schedules, sales capture, rankings, and team structure—built for
+                door-to-door workflows.
               </p>
-            </motion.div>
-
-            <motion.div
-              className="feature-card compact"
-              variants={featureVariants}
-              whileHover={{
-                y: -6,
-                transition: { duration: 0.3, ease: "easeOut" },
-              }}
-            >
-              <div className="feature-icon-wrapper compact">
-                <div className="feature-icon">📊</div>
-              </div>
-              <h3 className="feature-title">Sales Tracking</h3>
-              <p className="feature-description compact">
-                Record sales activities and monitor team performance
-              </p>
-            </motion.div>
-
-            <motion.div
-              className="feature-card compact"
-              variants={featureVariants}
-              whileHover={{
-                y: -6,
-                transition: { duration: 0.3, ease: "easeOut" },
-              }}
-            >
-              <div className="feature-icon-wrapper compact">
-                <div className="feature-icon">💰</div>
-              </div>
-              <h3 className="feature-title">Payroll & Paystubs</h3>
-              <p className="feature-description compact">
-                Generate paystubs based on work hours and performance
-              </p>
-            </motion.div>
-          </motion.div>
-        </motion.div>
+            </div>
+            <div className="landing__features-grid">
+              {KEY_FEATURES.map(({ Icon, title, description, tone }) => (
+                <motion.article
+                  key={title}
+                  className={`landing__feature-card landing__feature-card--${tone}`}
+                  variants={featureVariants}
+                  whileHover={{ y: -4 }}
+                >
+                  <div
+                    className={`landing__feature-icon landing__feature-icon--${tone}`}
+                  >
+                    <Icon className="landing__feature-icon-svg" aria-hidden />
+                  </div>
+                  <div className="landing__feature-body">
+                    <h3 className="landing__feature-heading">{title}</h3>
+                    <p className="landing__feature-text">{description}</p>
+                  </div>
+                </motion.article>
+              ))}
+            </div>
+          </div>
+        </motion.section>
       </motion.div>
 
-      {/* Footer */}
-      <motion.footer
-        className="footer"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1 }}
-      >
-        <div className="footer-content">
-          <div className="footer-logo">
-            <img src={Logo} alt="Turtle Sales" className="footer-logo-img" />
-            <span className="footer-logo-text">Turtle Sales</span>
+      <footer className="landing__footer">
+        <div className="landing__footer-inner">
+          <div className="landing__footer-brand">
+            <img src={Logo} alt="" className="landing__footer-logo" width={32} height={32} />
+            <span className="landing__footer-name">Turtle Sales</span>
           </div>
-          <p className="footer-text">
-            © 2025 Turtle Sales by Yasir Corp. Making door-to-door sales easy.
+          <p className="landing__footer-copy">
+            © {new Date().getFullYear()} Turtle Sales by Yasir Corp. Making
+            door-to-door sales easy.
           </p>
         </div>
-      </motion.footer>
+      </footer>
     </div>
   );
 };
