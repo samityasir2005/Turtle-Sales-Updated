@@ -1,6 +1,6 @@
 import React from "react";
 import "../styles/DashboardPreview.css";
-import logo from "../assets/logo.png";
+import logo from "../assets/Turtle_logo.png";
 import {
   FiGrid,
   FiUser,

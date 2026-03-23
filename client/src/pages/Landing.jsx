@@ -3,7 +3,7 @@ import "../styles/Landing.css";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { FiEdit3, FiTrendingUp, FiClock, FiUsers } from "react-icons/fi";
-import Logo from "../assets/logo.png";
+import Logo from "../assets/Turtle_logo.png";
 import DashboardPreview from "../components/DashboardPreview";
 
 const KEY_FEATURES = [

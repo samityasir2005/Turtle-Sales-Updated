@@ -8,7 +8,7 @@ import React, {
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import turtleLogo from "../assets/logo.png";
+import turtleLogo from "../assets/Turtle_logo.png";
 
 const TOP_COLOR = new THREE.Color("#4dff9a");
 const MID_COLOR = new THREE.Color("#1ee878");

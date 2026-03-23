@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FiMenu, FiX } from "react-icons/fi";
-import logo from "../assets/logo.png";
+import logo from "../assets/Turtle_logo.png";
 import { UserContext } from "../usercontext/UserContext";
 import "./Header.css";
 

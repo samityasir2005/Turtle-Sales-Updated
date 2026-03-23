@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Logo from "../assets/logo.png";
+import Logo from "../assets/Turtle_logo.png";
 import { FaEye, FaEyeSlash, FaCheck, FaXmark } from "react-icons/fa6";
 import "../styles/Register.css";
 import { Link, useNavigate } from "react-router-dom";
